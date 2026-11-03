@@ -3,34 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🩺 Wearable Health Monitor — IoT Dashboard</title>
-  <meta name="description" content="Real-time wearable health monitoring using ESP32, MAX30102, DS18B20. Heart Rate, SpO2, Temperature over Wi-Fi." />
-  <meta property="og:title" content="Wearable Health Monitor — IoT Dashboard" />
-  <meta property="og:description" content="Real-time health vitals dashboard powered by ESP32 & IoT sensors" />
+  <title>🩺 Wearable Health Monitor — Bluetooth Dashboard</title>
+  <meta name="description" content="Real-time health monitoring via Bluetooth smartwatch. Heart Rate, SpO2, Temperature." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩺</text></svg>" />
   <style>
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     :root {
-      --bg:        #0f0c29;
-      --bg2:       #1a1740;
-      --card:      rgba(255,255,255,0.06);
-      --border:    rgba(255,255,255,0.10);
-      --green:     #00ff88;
-      --red:       #ff6b6b;
-      --teal:      #4ecdc4;
-      --orange:    #ffa500;
-      --purple:    #9988ff;
-      --yellow:    #ffcc00;
-      --white:     #ffffff;
-      --muted:     #aaaacc;
+      --bg:     #0f0c29;
+      --bg2:    #1a1740;
+      --card:   rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.10);
+      --green:  #00ff88;
+      --red:    #ff6b6b;
+      --teal:   #4ecdc4;
+      --orange: #ffa500;
+      --purple: #9988ff;
+      --yellow: #ffcc00;
+      --blue:   #4a90e2;
+      --white:  #ffffff;
+      --muted:  #aaaacc;
     }
-
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Segoe UI', system-ui, sans-serif;
       background: linear-gradient(135deg, var(--bg) 0%, #302b63 50%, #24243e 100%);
-      min-height: 100vh;
-      color: var(--white);
+      min-height: 100vh; color: var(--white);
     }
 
     /* ── HEADER ── */
@@ -39,200 +35,200 @@
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--border);
       padding: 0 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 64px;
-      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; position: sticky; top: 0; z-index: 100;
     }
-    .logo { display: flex; align-items: center; gap: 12px; }
-    .logo-icon { font-size: 1.8rem; }
-    .logo h1 { font-size: 1.15rem; font-weight: 700; }
-    .logo p  { font-size: 0.72rem; color: var(--muted); }
-    .live-badge {
-      display: flex; align-items: center; gap: 8px;
-      background: rgba(0,255,136,0.1);
-      border: 1px solid rgba(0,255,136,0.3);
-      border-radius: 20px; padding: 6px 14px;
-      font-size: 0.78rem; font-weight: 600; color: var(--green);
-    }
-    .pulse { width: 8px; height: 8px; border-radius: 50%;
-             background: var(--green); animation: pulse 1.4s infinite; }
-    @keyframes pulse {
-      0%,100% { transform:scale(1); opacity:1; }
-      50%      { transform:scale(1.6); opacity:.5; }
-    }
-    .header-right { display: flex; align-items: center; gap: 12px; }
-    .mode-toggle {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 20px; padding: 6px 14px;
-      color: var(--muted); font-size: 0.78rem; cursor: pointer;
-      transition: all .2s;
-    }
-    .mode-toggle:hover { border-color: var(--green); color: var(--green); }
-    .mode-toggle.active { background: rgba(0,255,136,.15);
-      border-color: var(--green); color: var(--green); }
+    .logo { display:flex; align-items:center; gap:12px; }
+    .logo h1 { font-size:1.1rem; font-weight:700; }
+    .logo p  { font-size:0.7rem; color:var(--muted); }
+    .hdr-right { display:flex; align-items:center; gap:10px; }
 
-    /* ── HERO SECTION ── */
-    .hero {
-      text-align: center; padding: 48px 24px 24px;
+    .status-pill {
+      display:flex; align-items:center; gap:7px;
+      padding:6px 14px; border-radius:20px;
+      font-size:.75rem; font-weight:600;
+      border:1px solid; transition:all .3s;
     }
-    .hero h2 { font-size: clamp(1.6rem, 4vw, 2.6rem); font-weight: 800;
-               line-height: 1.2; }
-    .hero h2 span { color: var(--green); }
-    .hero p { margin-top: 12px; color: var(--muted); font-size: 1rem; max-width: 560px; margin-inline: auto; }
-    .badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
-    .badge {
-      padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
-      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
-    }
+    .pill-idle   { background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.15); color:var(--muted); }
+    .pill-scan   { background:rgba(74,144,226,.12);  border-color:rgba(74,144,226,.4);   color:var(--blue); }
+    .pill-conn   { background:rgba(0,255,136,.12);   border-color:rgba(0,255,136,.4);    color:var(--green); }
+    .pill-err    { background:rgba(255,107,107,.12); border-color:rgba(255,107,107,.4);  color:var(--red); }
+    .pill-sim    { background:rgba(255,204,0,.1);    border-color:rgba(255,204,0,.3);    color:var(--yellow); }
 
-    /* ── DATA SOURCE BAR ── */
-    .source-bar {
-      max-width: 900px; margin: 16px auto;
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 12px; padding: 12px 20px;
-      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    .dot { width:8px; height:8px; border-radius:50%; }
+    .dot-pulse { animation:pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.6);opacity:.5} }
+
+    /* ── HERO ── */
+    .hero { text-align:center; padding:44px 20px 20px; }
+    .hero h2 { font-size:clamp(1.5rem,4vw,2.4rem); font-weight:800; }
+    .hero h2 span { color:var(--blue); }
+    .hero p { margin-top:10px; color:var(--muted); font-size:.95rem;
+              max-width:540px; margin-inline:auto; }
+    .badges { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+    .badge  { padding:3px 11px; border-radius:20px; font-size:.72rem; font-weight:600;
+              background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); }
+
+    /* ── BT CONNECT PANEL ── */
+    .bt-panel {
+      max-width:760px; margin:0 auto 20px; padding:0 20px;
     }
-    .source-bar label { font-size: .82rem; color: var(--muted); white-space: nowrap; }
-    .source-bar input {
-      flex: 1; min-width: 200px; background: rgba(255,255,255,.06);
-      border: 1px solid var(--border); border-radius: 8px;
-      color: white; padding: 6px 12px; font-size: .82rem; outline: none;
+    .bt-box {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:18px; padding:22px 24px;
+      display:flex; align-items:center; gap:16px; flex-wrap:wrap;
     }
-    .source-bar input:focus { border-color: var(--green); }
-    .source-bar input::placeholder { color: var(--muted); }
+    .bt-icon { font-size:2.2rem; flex-shrink:0; }
+    .bt-info { flex:1; min-width:160px; }
+    .bt-info h3 { font-size:.95rem; font-weight:700; }
+    .bt-info p  { font-size:.78rem; color:var(--muted); margin-top:3px; }
+    .bt-actions { display:flex; gap:8px; flex-wrap:wrap; }
+
     .btn {
-      padding: 7px 18px; border-radius: 8px; font-size: .82rem;
-      font-weight: 600; cursor: pointer; border: none; transition: all .2s;
+      padding:9px 20px; border-radius:10px; font-size:.82rem;
+      font-weight:700; cursor:pointer; border:none; transition:all .2s;
+      display:inline-flex; align-items:center; gap:6px;
     }
-    .btn-green  { background: var(--green); color: #0f0c29; }
-    .btn-green:hover  { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,255,136,.4); }
-    .btn-ghost  { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-    .btn-ghost:hover  { border-color: var(--green); color: var(--green); }
-    #sourceStatus { font-size: .78rem; padding: 4px 10px; border-radius: 8px; white-space: nowrap; }
-    .sim-badge  { background: rgba(255,204,0,.12); color: var(--yellow); border: 1px solid rgba(255,204,0,.3); }
-    .live-src   { background: rgba(0,255,136,.12); color: var(--green); border: 1px solid rgba(0,255,136,.3); }
-    .err-badge  { background: rgba(255,107,107,.12); color: var(--red); border: 1px solid rgba(255,107,107,.3); }
+    .btn-blue   { background:var(--blue);  color:#fff; }
+    .btn-blue:hover  { transform:translateY(-2px); box-shadow:0 6px 20px rgba(74,144,226,.4); }
+    .btn-red    { background:rgba(255,107,107,.2); border:1px solid rgba(255,107,107,.4);
+                  color:var(--red); }
+    .btn-red:hover   { background:rgba(255,107,107,.3); }
+    .btn-ghost  { background:transparent; border:1px solid var(--border); color:var(--muted); }
+    .btn-ghost:hover { border-color:var(--blue); color:var(--blue); }
+    .btn:disabled { opacity:.4; cursor:not-allowed; transform:none !important; }
+
+    /* device name chip */
+    .device-chip {
+      background:rgba(74,144,226,.12); border:1px solid rgba(74,144,226,.3);
+      border-radius:20px; padding:5px 14px; font-size:.8rem; color:var(--blue);
+      display:inline-flex; align-items:center; gap:6px;
+    }
+
+    /* BT not supported warning */
+    .bt-warning {
+      background:rgba(255,204,0,.1); border:1px solid rgba(255,204,0,.3);
+      border-radius:12px; padding:12px 18px; font-size:.82rem;
+      color:var(--yellow); margin-top:12px; line-height:1.5;
+    }
+
+    /* ── ALERT BANNER ── */
+    #alertBanner { max-width:1100px; margin:0 auto 12px; padding:0 20px; display:none; }
+    .alert-inner {
+      background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.4);
+      border-radius:12px; padding:11px 18px;
+      display:flex; align-items:center; gap:10px;
+      animation:alertPulse 1s infinite;
+    }
+    @keyframes alertPulse {
+      0%,100%{border-color:rgba(255,107,107,.3)} 50%{border-color:rgba(255,107,107,.9)}
+    }
+    .alert-inner span { font-size:.88rem; font-weight:600; color:var(--red); }
 
     /* ── DASHBOARD GRID ── */
     .dashboard {
-      max-width: 1100px; margin: 0 auto; padding: 0 20px 40px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 18px;
+      max-width:1100px; margin:0 auto; padding:0 20px 36px;
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(270px,1fr));
+      gap:16px;
     }
 
     /* ── VITAL CARD ── */
     .card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 20px; padding: 22px;
-      backdrop-filter: blur(8px);
-      transition: transform .3s, box-shadow .3s;
-      position: relative; overflow: hidden;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:20px; padding:22px;
+      backdrop-filter:blur(8px);
+      transition:transform .3s, box-shadow .3s;
+      position:relative; overflow:hidden;
     }
     .card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
     }
-    .card-hr::before   { background: var(--red); }
-    .card-spo2::before { background: var(--teal); }
-    .card-temp::before { background: var(--orange); }
-    .card-ov::before   { background: var(--purple); }
-    .card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,.3); }
+    .card-hr::before   { background:var(--red); }
+    .card-spo2::before { background:var(--teal); }
+    .card-temp::before { background:var(--orange); }
+    .card-ov::before   { background:var(--purple); }
+    .card:hover { transform:translateY(-4px); box-shadow:0 18px 36px rgba(0,0,0,.3); }
 
-    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-    .card-icon   { font-size: 1.8rem; }
-    .card-label  { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .card-icon   { font-size:1.7rem; }
+    .card-label  { font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+    .card-src    { font-size:.65rem; padding:2px 8px; border-radius:10px; }
+    .src-bt  { background:rgba(74,144,226,.15); color:var(--blue); }
+    .src-sim { background:rgba(255,204,0,.12); color:var(--yellow); }
 
-    .card-value {
-      font-size: 3.2rem; font-weight: 900; line-height: 1;
-      margin: 6px 0 2px; transition: color .4s;
+    .card-value { font-size:3rem; font-weight:900; line-height:1; margin:6px 0 2px; transition:color .4s; }
+    .card-unit  { font-size:.82rem; color:var(--muted); margin-bottom:10px; }
+
+    .sbadge {
+      display:inline-block; padding:3px 12px; border-radius:20px;
+      font-size:.72rem; font-weight:600;
     }
-    .card-unit  { font-size: .85rem; color: var(--muted); margin-bottom: 10px; }
+    .s-normal  { background:rgba(0,255,136,.14); color:var(--green); }
+    .s-warning { background:rgba(255,204,0,.14); color:var(--yellow); }
+    .s-danger  { background:rgba(255,107,107,.14); color:var(--red); }
 
-    .status-badge {
-      display: inline-block; padding: 3px 12px; border-radius: 20px;
-      font-size: .75rem; font-weight: 600;
-    }
-    .s-normal  { background: rgba(0,255,136,.15);  color: var(--green); }
-    .s-warning { background: rgba(255,204,0,.15);  color: var(--yellow); }
-    .s-danger  { background: rgba(255,107,107,.15); color: var(--red); }
-
-    /* ── SPARKLINE CANVAS ── */
-    .chart-wrap { margin-top: 14px; border-radius: 8px;
-                  background: rgba(255,255,255,.03); padding: 8px; }
-    canvas { width: 100% !important; height: 56px !important; display: block; }
+    .chart-wrap { margin-top:12px; border-radius:8px;
+                  background:rgba(255,255,255,.03); padding:8px; }
+    canvas { width:100% !important; height:52px !important; display:block; }
 
     /* ── OVERALL CARD ── */
-    .card-ov { grid-column: 1 / -1; }
-    .ov-inner { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
-    .ov-status { font-size: 1.8rem; font-weight: 800; }
-    .mini-stats { display: flex; gap: 14px; flex-wrap: wrap; }
-    .mini-stat  {
-      background: rgba(255,255,255,.07); border-radius: 12px; padding: 10px 18px;
-      min-width: 110px;
-    }
-    .mini-stat .ml { font-size: .72rem; color: var(--muted); }
-    .mini-stat .mv { font-size: 1.25rem; font-weight: 700; }
+    .card-ov { grid-column:1/-1; }
+    .ov-inner { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+    .ov-status { font-size:1.6rem; font-weight:800; }
+    .mini-stats { display:flex; gap:12px; flex-wrap:wrap; }
+    .mini-stat  { background:rgba(255,255,255,.07); border-radius:10px; padding:9px 16px; }
+    .mini-stat .ml { font-size:.68rem; color:var(--muted); }
+    .mini-stat .mv { font-size:1.15rem; font-weight:700; }
+    .refresh-info { margin-left:auto; text-align:right; }
+    .refresh-info .rl { font-size:.68rem; color:var(--muted); }
+    .refresh-info .rv { font-size:.82rem; color:var(--green); }
 
-    .refresh-info { margin-left: auto; text-align: right; }
-    .refresh-info .rl { font-size: .72rem; color: var(--muted); }
-    .refresh-info .rv { font-size: .85rem; color: var(--green); }
+    /* ── BT GATT LOG ── */
+    .bt-log {
+      max-width:1100px; margin:0 auto 20px; padding:0 20px;
+    }
+    .bt-log-box {
+      background:rgba(0,0,0,.3); border:1px solid var(--border);
+      border-radius:12px; padding:12px 16px;
+      font-family:monospace; font-size:.75rem; color:var(--muted);
+      max-height:90px; overflow-y:auto; line-height:1.7;
+    }
+    .log-ok   { color:var(--green); }
+    .log-info { color:var(--blue); }
+    .log-warn { color:var(--yellow); }
+    .log-err  { color:var(--red); }
 
-    /* ── ALERT BANNER ── */
-    #alertBanner {
-      max-width: 1100px; margin: 0 auto 16px; padding: 0 20px;
-      display: none;
-    }
-    .alert-inner {
-      background: rgba(255,107,107,.12);
-      border: 1px solid rgba(255,107,107,.35);
-      border-radius: 12px; padding: 12px 20px;
-      display: flex; align-items: center; gap: 10px;
-      animation: alertPulse 1s infinite;
-    }
-    @keyframes alertPulse {
-      0%,100% { border-color: rgba(255,107,107,.35); }
-      50%      { border-color: rgba(255,107,107,.8); }
-    }
-    .alert-inner span { font-size: .9rem; font-weight: 600; color: var(--red); }
-
-    /* ── ABOUT SECTION ── */
-    .about {
-      max-width: 1100px; margin: 0 auto; padding: 0 20px 60px;
-    }
-    .about h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 14px; color: var(--green); }
-    .about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+    /* ── ABOUT ── */
+    .about { max-width:1100px; margin:0 auto; padding:0 20px 50px; }
+    .about h3 { font-size:1.1rem; font-weight:700; margin-bottom:12px; color:var(--blue); }
+    .about-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
     .about-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 18px;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:14px; padding:16px;
     }
-    .about-card .ai { font-size: 1.6rem; margin-bottom: 8px; }
-    .about-card .at { font-size: .9rem; font-weight: 700; margin-bottom: 4px; }
-    .about-card .ad { font-size: .78rem; color: var(--muted); }
-
-    .links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+    .about-card .ai { font-size:1.5rem; margin-bottom:6px; }
+    .about-card .at { font-size:.85rem; font-weight:700; margin-bottom:3px; }
+    .about-card .ad { font-size:.74rem; color:var(--muted); }
+    .links { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
     .link-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 8px 18px; border-radius: 10px; font-size: .85rem; font-weight: 600;
-      text-decoration: none; transition: all .2s;
+      display:inline-flex; align-items:center; gap:6px;
+      padding:8px 16px; border-radius:10px; font-size:.8rem; font-weight:600;
+      text-decoration:none; transition:all .2s;
     }
-    .link-btn.gh { background: rgba(255,255,255,.1); border: 1px solid var(--border); color: white; }
-    .link-btn.gh:hover { background: rgba(255,255,255,.18); }
-    .link-btn.demo { background: var(--green); color: #0f0c29; }
-    .link-btn.demo:hover { box-shadow: 0 4px 20px rgba(0,255,136,.4); transform:translateY(-1px); }
+    .link-btn.gh   { background:rgba(255,255,255,.1); border:1px solid var(--border); color:white; }
+    .link-btn.gh:hover { background:rgba(255,255,255,.18); }
+    .link-btn.api  { background:var(--blue); color:white; }
+    .link-btn.api:hover { box-shadow:0 4px 16px rgba(74,144,226,.4); transform:translateY(-1px); }
 
-    footer {
-      text-align: center; padding: 20px;
-      font-size: .78rem; color: #555577;
-      border-top: 1px solid var(--border);
-    }
+    footer { text-align:center; padding:18px; font-size:.74rem; color:#555577;
+             border-top:1px solid var(--border); }
 
-    /* ── RESPONSIVE ── */
-    @media (max-width: 600px) {
-      header { padding: 0 14px; }
-      .hero { padding: 32px 14px 16px; }
-      .card-value { font-size: 2.6rem; }
+    @media(max-width:600px){
+      header { padding:0 12px; }
+      .hero  { padding:28px 12px 14px; }
+      .card-value { font-size:2.5rem; }
+      .bt-box { flex-direction:column; align-items:flex-start; }
     }
   </style>
 </head>
@@ -241,45 +237,66 @@
 <!-- HEADER -->
 <header>
   <div class="logo">
-    <div class="logo-icon">🩺</div>
+    <span style="font-size:1.6rem;">🩺</span>
     <div>
       <h1>Health Monitor</h1>
-      <p>IoT Wearable Dashboard</p>
+      <p>Bluetooth Smartwatch Dashboard</p>
     </div>
   </div>
-  <div class="header-right">
-    <div class="live-badge">
-      <div class="pulse"></div>
-      <span id="headerStatus">Simulated</span>
+  <div class="hdr-right">
+    <div class="status-pill pill-idle" id="hdrPill">
+      <div class="dot" id="hdrDot" style="background:var(--muted);"></div>
+      <span id="hdrLabel">Not Connected</span>
     </div>
-    <button class="mode-toggle" id="modeToggle" onclick="toggleMode()">
-      🔄 Switch to ESP32
-    </button>
   </div>
 </header>
 
 <!-- HERO -->
 <div class="hero">
-  <h2>Wearable <span>Health Monitoring</span><br>IoT Dashboard</h2>
-  <p>Real-time heart rate, blood oxygen &amp; body temperature monitoring over Wi-Fi using ESP32 &amp; IoT sensors.</p>
+  <h2>Connect Your <span>Bluetooth Smartwatch</span><br>— Live Health Dashboard</h2>
+  <p>Pair your BLE smartwatch directly via Web Bluetooth. Reads heart rate in real-time. SpO₂ &amp; temperature supplemented by simulation.</p>
   <div class="badges">
-    <span class="badge">⚡ ESP32</span>
-    <span class="badge">❤️ MAX30102</span>
-    <span class="badge">🌡️ DS18B20</span>
-    <span class="badge">📡 Wi-Fi 802.11</span>
-    <span class="badge">☁️ ThingSpeak</span>
-    <span class="badge">🔔 Smart Alerts</span>
+    <span class="badge">📶 BLE / Bluetooth 4.0+</span>
+    <span class="badge">❤️ Heart Rate GATT</span>
+    <span class="badge">🩸 SpO₂ Simulated</span>
+    <span class="badge">🌡️ Temp Simulated</span>
+    <span class="badge">🔒 HTTPS Secured</span>
+    <span class="badge">🌐 Chrome / Edge</span>
   </div>
 </div>
 
-<!-- DATA SOURCE BAR -->
-<div style="max-width:900px;margin:0 auto;padding:0 20px 16px;">
-  <div class="source-bar" id="sourceBar">
-    <label>📡 ESP32 IP:</label>
-    <input type="text" id="espIp" placeholder="e.g. 192.168.1.100" />
-    <button class="btn btn-green" onclick="connectESP32()">Connect</button>
-    <button class="btn btn-ghost" onclick="useSimulated()">Use Demo Data</button>
-    <span class="status-badge sim-badge" id="sourceStatus">🎲 Simulated Data</span>
+<!-- BLUETOOTH CONNECT PANEL -->
+<div class="bt-panel">
+  <div class="bt-box">
+    <div class="bt-icon">📶</div>
+    <div class="bt-info">
+      <h3>Bluetooth Smartwatch</h3>
+      <p id="btInfoText">Tap "Connect Watch" to pair your BLE smartwatch. Works with most fitness bands &amp; smartwatches.</p>
+      <div id="deviceChip" style="display:none; margin-top:8px;"></div>
+    </div>
+    <div class="bt-actions">
+      <button class="btn btn-blue" id="btnConnect" onclick="connectBluetooth()">
+        📶 Connect Watch
+      </button>
+      <button class="btn btn-red"  id="btnDisconnect" onclick="disconnectBluetooth()" style="display:none;">
+        ✕ Disconnect
+      </button>
+      <button class="btn btn-ghost" onclick="useSimulated()">
+        🎲 Demo Mode
+      </button>
+    </div>
+  </div>
+  <div id="btWarning" class="bt-warning" style="display:none;">
+    ⚠️ <strong>Web Bluetooth not supported</strong> in this browser.<br>
+    Please use <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong> on desktop/Android.
+    Demo mode is active instead.
+  </div>
+</div>
+
+<!-- BT LOG -->
+<div class="bt-log">
+  <div class="bt-log-box" id="btLog">
+    <span class="log-info">[ System ]</span> Dashboard ready. Click "Connect Watch" to pair your smartwatch via Bluetooth.<br>
   </div>
 </div>
 
@@ -287,7 +304,7 @@
 <div id="alertBanner">
   <div class="alert-inner">
     <span>⚠️</span>
-    <span id="alertMsg">Abnormal vitals detected! Check patient immediately.</span>
+    <span id="alertMsg">Abnormal vitals detected! Please check patient immediately.</span>
   </div>
 </div>
 
@@ -297,69 +314,74 @@
   <!-- Heart Rate -->
   <div class="card card-hr">
     <div class="card-header">
-      <div class="card-icon">❤️</div>
-      <div class="card-label">Heart Rate</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="card-icon">❤️</div>
+        <div class="card-label">Heart Rate</div>
+      </div>
+      <span class="card-src src-sim" id="hrSrc">Demo</span>
     </div>
     <div class="card-value" id="hrVal" style="color:var(--red)">--</div>
     <div class="card-unit">beats per minute (BPM)</div>
-    <span class="status-badge s-normal" id="hrBadge">—</span>
-    <div class="chart-wrap">
-      <canvas id="hrChart"></canvas>
-    </div>
+    <span class="sbadge s-normal" id="hrBadge">—</span>
+    <div class="chart-wrap"><canvas id="hrChart"></canvas></div>
   </div>
 
   <!-- SpO2 -->
   <div class="card card-spo2">
     <div class="card-header">
-      <div class="card-icon">🩸</div>
-      <div class="card-label">Blood Oxygen (SpO₂)</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="card-icon">🩸</div>
+        <div class="card-label">Blood Oxygen SpO₂</div>
+      </div>
+      <span class="card-src src-sim" id="spo2Src">Simulated</span>
     </div>
     <div class="card-value" id="spo2Val" style="color:var(--teal)">--</div>
     <div class="card-unit">percent (%)</div>
-    <span class="status-badge s-normal" id="spo2Badge">—</span>
-    <div class="chart-wrap">
-      <canvas id="spo2Chart"></canvas>
-    </div>
+    <span class="sbadge s-normal" id="spo2Badge">—</span>
+    <div class="chart-wrap"><canvas id="spo2Chart"></canvas></div>
   </div>
 
   <!-- Temperature -->
   <div class="card card-temp">
     <div class="card-header">
-      <div class="card-icon">🌡️</div>
-      <div class="card-label">Body Temperature</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="card-icon">🌡️</div>
+        <div class="card-label">Body Temperature</div>
+      </div>
+      <span class="card-src src-sim" id="tempSrc">Simulated</span>
     </div>
     <div class="card-value" id="tempVal" style="color:var(--orange)">--</div>
     <div class="card-unit">degrees Celsius (°C)</div>
-    <span class="status-badge s-normal" id="tempBadge">—</span>
+    <span class="sbadge s-normal" id="tempBadge">—</span>
   </div>
 
   <!-- Overall -->
   <div class="card card-ov">
-    <div class="card-label" style="margin-bottom:12px;">Overall Health Status</div>
+    <div class="card-label" style="margin-bottom:10px;">Overall Health Status</div>
     <div class="ov-inner">
-      <div class="ov-status" id="ovStatus">Connecting…</div>
+      <div class="ov-status" id="ovStatus">Waiting for data…</div>
       <div class="mini-stats">
         <div class="mini-stat">
           <div class="ml">❤️ Heart Rate</div>
-          <div class="mv" id="hrMini">--</div>
+          <div class="mv" id="hrMini">-- bpm</div>
         </div>
         <div class="mini-stat">
           <div class="ml">🩸 SpO₂</div>
-          <div class="mv" id="spo2Mini">--</div>
+          <div class="mv" id="spo2Mini">-- %</div>
         </div>
         <div class="mini-stat">
-          <div class="ml">🌡️ Temperature</div>
-          <div class="mv" id="tempMini">--</div>
+          <div class="ml">🌡️ Temp</div>
+          <div class="mv" id="tempMini">-- °C</div>
         </div>
         <div class="mini-stat">
-          <div class="ml">📡 Source</div>
-          <div class="mv" id="srcMini" style="font-size:.9rem;">--</div>
+          <div class="ml">📶 BT Device</div>
+          <div class="mv" id="deviceMini" style="font-size:.8rem;">None</div>
         </div>
       </div>
       <div class="refresh-info">
         <div class="rl">Last updated</div>
         <div class="rv" id="lastUpdate">—</div>
-        <div class="rl" style="margin-top:4px;">Auto-refresh: 2s</div>
+        <div class="rl" style="margin-top:3px;">HR: BLE notifications</div>
       </div>
     </div>
   </div>
@@ -368,32 +390,32 @@
 
 <!-- ABOUT -->
 <div class="about">
-  <h3>⚙️ About This Project</h3>
+  <h3>📡 How It Works</h3>
   <div class="about-grid">
     <div class="about-card">
-      <div class="ai">🔩</div>
-      <div class="at">Hardware</div>
-      <div class="ad">ESP32 + MAX30102 + DS18B20 + SSD1306 OLED + Buzzer + LED</div>
+      <div class="ai">📶</div>
+      <div class="at">Web Bluetooth API</div>
+      <div class="ad">Browser connects directly to your smartwatch via BLE — no app, no server needed.</div>
     </div>
     <div class="about-card">
-      <div class="ai">📡</div>
-      <div class="at">Wireless</div>
-      <div class="ad">IEEE 802.11 b/g/n Wi-Fi, HTTP REST API (JSON), ThingSpeak cloud</div>
+      <div class="ai">❤️</div>
+      <div class="at">GATT Heart Rate</div>
+      <div class="ad">Reads standard Heart Rate Measurement (0x2A37) from your watch in real-time.</div>
     </div>
     <div class="about-card">
-      <div class="ai">💻</div>
-      <div class="at">Firmware</div>
-      <div class="ad">Arduino framework on ESP32. Self-hosted web server on port 80</div>
+      <div class="ai">🩸</div>
+      <div class="at">SpO₂ & Temp</div>
+      <div class="ad">Simulated realistically. Use ThingSpeak or ESP32 to add real sensor data.</div>
     </div>
     <div class="about-card">
       <div class="ai">🔔</div>
-      <div class="at">Alerts</div>
-      <div class="ad">LED + buzzer trigger on abnormal HR, SpO₂ or temperature readings</div>
+      <div class="at">Smart Alerts</div>
+      <div class="ad">Color-coded badges and alert banner fire automatically on abnormal readings.</div>
     </div>
     <div class="about-card">
-      <div class="ai">💰</div>
-      <div class="at">Cost</div>
-      <div class="ad">₹600 – ₹900 total (~$8–$12 USD). Beginner friendly build.</div>
+      <div class="ai">🌐</div>
+      <div class="at">Browser Only</div>
+      <div class="ad">Works in Chrome & Edge (desktop + Android). HTTPS required — Vercel handles this!</div>
     </div>
     <div class="about-card">
       <div class="ai">👨‍💻</div>
@@ -401,205 +423,309 @@
       <div class="ad">Praveen Kumar | Wireless Communication & IoT | 2026</div>
     </div>
   </div>
-
-  <div class="links" style="margin-top:24px;">
+  <div class="links" style="margin-top:18px;">
     <a href="https://github.com/Pavi9353/HealthMonitor-IoT" target="_blank" class="link-btn gh">
-      ⭐ GitHub Repository
+      ⭐ GitHub Repo
     </a>
     <a href="https://github.com/Pavi9353/HealthMonitor-IoT/blob/main/firmware/main/main.ino" target="_blank" class="link-btn gh">
-      📄 View Firmware Code
+      📄 ESP32 Firmware
     </a>
-    <a href="https://github.com/Pavi9353/HealthMonitor-IoT/blob/main/docs/circuit_diagram.png" target="_blank" class="link-btn gh">
-      🔌 Circuit Diagram
-    </a>
-    <a href="/api/simulate" target="_blank" class="link-btn demo">
-      📊 JSON Data API
+    <a href="/api/simulate" target="_blank" class="link-btn api">
+      📊 Simulate API
     </a>
   </div>
 </div>
 
 <footer>
-  🩺 Wearable Health Monitoring System &nbsp;|&nbsp; Built by Praveen Kumar &nbsp;|&nbsp; Deployed on Vercel &nbsp;|&nbsp; 2026
+  🩺 Wearable Health Monitor &nbsp;|&nbsp; Bluetooth + IoT &nbsp;|&nbsp; Praveen Kumar &nbsp;|&nbsp; Deployed on Vercel &nbsp;|&nbsp; 2026
 </footer>
 
 <script>
-  /* ── State ── */
-  let mode       = 'simulated';   // 'simulated' | 'esp32'
-  let espBaseUrl = '';
-  const hrHistory   = [];
-  const spo2History = [];
+/* ════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════ */
+let btDevice     = null;
+let hrCharac     = null;
+let simInterval  = null;
+let isConnected  = false;
+let deviceName   = '';
 
-  /* ── Sparkline ── */
-  function drawSparkline(id, data, color) {
-    const c = document.getElementById(id);
-    if (!c || data.length < 2) return;
-    c.width  = c.offsetWidth;
-    c.height = 56;
-    const ctx = c.getContext('2d');
-    const w = c.width, h = c.height;
-    const min = Math.min(...data) * 0.97;
-    const max = Math.max(...data) * 1.03 || 1;
-    ctx.clearRect(0, 0, w, h);
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth   = 2;
-    ctx.shadowBlur  = 10;
-    ctx.shadowColor = color;
-    data.forEach((v, i) => {
-      const x = (i / (data.length - 1)) * w;
-      const y = h - ((v - min) / (max - min)) * h;
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+const hrHistory   = [];
+const spo2History = [];
+
+/* ════════════════════════════════════════════════
+   LOG
+════════════════════════════════════════════════ */
+function log(msg, type = 'info') {
+  const el  = document.getElementById('btLog');
+  const ts  = new Date().toLocaleTimeString();
+  const cls = { ok:'log-ok', info:'log-info', warn:'log-warn', err:'log-err' }[type] || 'log-info';
+  el.innerHTML += `<span class="${cls}">[ ${ts} ]</span> ${msg}<br>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+/* ════════════════════════════════════════════════
+   HEADER PILL
+════════════════════════════════════════════════ */
+function setPill(state, label) {
+  const pill = document.getElementById('hdrPill');
+  const dot  = document.getElementById('hdrDot');
+  const lbl  = document.getElementById('hdrLabel');
+  lbl.textContent = label;
+  pill.className  = 'status-pill';
+  dot.className   = 'dot';
+  const map = {
+    idle:  ['pill-idle',  'var(--muted)',  false],
+    scan:  ['pill-scan',  'var(--blue)',   true],
+    conn:  ['pill-conn',  'var(--green)',  true],
+    err:   ['pill-err',   'var(--red)',    false],
+    sim:   ['pill-sim',   'var(--yellow)', true],
+  };
+  const [cls, col, pulse] = map[state] || map.idle;
+  pill.classList.add(cls);
+  dot.style.background = col;
+  if (pulse) dot.classList.add('dot-pulse');
+}
+
+/* ════════════════════════════════════════════════
+   SPARKLINE
+════════════════════════════════════════════════ */
+function drawSparkline(id, data, color) {
+  const c = document.getElementById(id);
+  if (!c || data.length < 2) return;
+  c.width = c.offsetWidth; c.height = 52;
+  const ctx = c.getContext('2d'), w = c.width, h = c.height;
+  const mn = Math.min(...data) * .97, mx = Math.max(...data) * 1.03 || 1;
+  ctx.clearRect(0,0,w,h);
+  ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.shadowBlur = 10; ctx.shadowColor = color;
+  data.forEach((v,i)=>{
+    const x=(i/(data.length-1))*w, y=h-((v-mn)/(mx-mn))*h;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
+  const g=ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,color+'44'); g.addColorStop(1,'transparent');
+  ctx.fillStyle=g; ctx.fill();
+}
+
+/* ════════════════════════════════════════════════
+   RENDER VITALS
+════════════════════════════════════════════════ */
+function statusClass(s) {
+  if (!s) return 's-normal';
+  const l = s.toLowerCase();
+  if (l.includes('critical')||l.includes('fever')||l.includes('tachy')||l.includes('brady')||l.includes('low (')) return 's-danger';
+  if (l.includes('slightly')||l.includes('low')||l.includes('high')) return 's-warning';
+  return 's-normal';
+}
+
+function render(data) {
+  const hr   = data.heartRate != null ? +data.heartRate : null;
+  const sp   = data.spo2      != null ? +data.spo2      : null;
+  const tmp  = data.bodyTemp  != null ? +data.bodyTemp  : null;
+
+  if (hr != null)  { document.getElementById('hrVal').textContent   = hr.toFixed(0); }
+  if (sp != null)  { document.getElementById('spo2Val').textContent  = sp.toFixed(0); }
+  if (tmp != null) { document.getElementById('tempVal').textContent  = tmp.toFixed(1); }
+
+  document.getElementById('hrMini').textContent   = hr != null ? hr.toFixed(0)+' bpm' : '-- bpm';
+  document.getElementById('spo2Mini').textContent  = sp != null ? sp.toFixed(0)+'%'   : '-- %';
+  document.getElementById('tempMini').textContent  = tmp != null ? tmp.toFixed(1)+'°C' : '-- °C';
+
+  const setBadge = (id, text) => {
+    const el = document.getElementById(id);
+    el.textContent = text || '—'; el.className = 'sbadge ' + statusClass(text);
+  };
+  setBadge('hrBadge',   data.hrStatus);
+  setBadge('spo2Badge', data.spo2Status);
+  setBadge('tempBadge', data.tempStatus);
+
+  const alert = data.alertActive;
+  const ov = document.getElementById('ovStatus');
+  ov.textContent = alert ? '⚠️ Alert — Check Patient!' : '✅ All Vitals Normal';
+  ov.style.color  = alert ? 'var(--red)' : 'var(--green)';
+  document.getElementById('alertBanner').style.display = alert ? 'block' : 'none';
+
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+  if (hr != null)  { hrHistory.push(hr);   if (hrHistory.length > 30) hrHistory.shift(); }
+  if (sp != null)  { spo2History.push(sp); if (spo2History.length > 30) spo2History.shift(); }
+  drawSparkline('hrChart',   hrHistory,   '#ff6b6b');
+  drawSparkline('spo2Chart', spo2History, '#4ecdc4');
+}
+
+/* ════════════════════════════════════════════════
+   SIMULATED VITALS (SpO2 + Temp always simulated)
+════════════════════════════════════════════════ */
+function simVitals(hrOverride) {
+  const t   = Date.now() / 3000;
+  const hr  = hrOverride ?? (70 + Math.sin(t*.7)*8 + Math.random()*3);
+  const sp  = 97 + Math.sin(t*.3)*1.5 + Math.random()*.5;
+  const tmp = 36.6 + Math.sin(t*.2)*.4 + Math.random()*.1;
+
+  const hrStatus   = hr < 60 ? 'Low (Bradycardia)' : hr > 100 ? 'High (Tachycardia)' : 'Normal';
+  const spo2Status = sp < 90 ? 'Critical' : sp < 95 ? 'Low' : 'Normal';
+  const tempStatus = tmp > 38.5 ? 'Fever' : tmp > 37.5 ? 'Slightly High' : tmp < 36 ? 'Low' : 'Normal';
+  const alertActive = hrStatus !== 'Normal' || spo2Status !== 'Normal' || tempStatus !== 'Normal';
+
+  return { heartRate:hr, spo2:sp, bodyTemp:tmp, hrStatus, spo2Status, tempStatus, alertActive };
+}
+
+function useSimulated() {
+  clearInterval(simInterval);
+  setPill('sim', 'Demo Mode');
+  document.getElementById('hrSrc').textContent  = 'Demo';
+  document.getElementById('hrSrc').className    = 'card-src src-sim';
+  document.getElementById('spo2Src').textContent = 'Simulated';
+  document.getElementById('tempSrc').textContent = 'Simulated';
+  log('Switched to demo/simulated data mode.', 'warn');
+  simInterval = setInterval(() => render(simVitals()), 2000);
+  render(simVitals());
+}
+
+/* ════════════════════════════════════════════════
+   HEART RATE CHARACTERISTIC HANDLER
+════════════════════════════════════════════════ */
+function parseHeartRate(value) {
+  // GATT Heart Rate Measurement (0x2A37)
+  const flags = value.getUint8(0);
+  const is16bit = flags & 0x01;
+  const hr = is16bit ? value.getUint16(1, true) : value.getUint8(1);
+  return hr;
+}
+
+function onHRNotification(event) {
+  const hr = parseHeartRate(event.target.value);
+  log(`Heart rate reading: <b>${hr} BPM</b>`, 'ok');
+  const combined = simVitals(hr);  // use real HR, simulated SpO2/temp
+  render(combined);
+}
+
+/* ════════════════════════════════════════════════
+   BLUETOOTH CONNECT
+════════════════════════════════════════════════ */
+async function connectBluetooth() {
+  if (!navigator.bluetooth) {
+    document.getElementById('btWarning').style.display = 'block';
+    log('Web Bluetooth NOT supported in this browser. Use Chrome or Edge.', 'err');
+    useSimulated(); return;
+  }
+
+  try {
+    setPill('scan', 'Scanning…');
+    log('Scanning for Bluetooth devices…', 'info');
+    document.getElementById('btnConnect').disabled = true;
+
+    btDevice = await navigator.bluetooth.requestDevice({
+      filters: [{ services: ['heart_rate'] }],
+      optionalServices: [
+        'heart_rate',       // 0x180D — Heart Rate
+        'battery_service',  // 0x180F — Battery
+        'health_thermometer', // 0x1809
+        'device_information', // 0x180A
+      ]
     });
-    ctx.stroke();
-    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, color + '44');
-    grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad; ctx.fill();
+
+    deviceName = btDevice.name || 'Unknown Device';
+    log(`Found device: <b>${deviceName}</b>. Connecting…`, 'info');
+    document.getElementById('deviceMini').textContent = deviceName;
+
+    btDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+    const server  = await btDevice.gatt.connect();
+    log('GATT server connected.', 'ok');
+
+    const service = await server.getPrimaryService('heart_rate');
+    log('Heart Rate Service (0x180D) found.', 'ok');
+
+    hrCharac = await service.getCharacteristic('heart_rate_measurement');
+    log('Heart Rate Measurement characteristic (0x2A37) ready.', 'ok');
+
+    await hrCharac.startNotifications();
+    hrCharac.addEventListener('characteristicvaluechanged', onHRNotification);
+    log(`Notifications started. Listening for heart rate from <b>${deviceName}</b>…`, 'ok');
+
+    // Update UI
+    isConnected = true;
+    setPill('conn', deviceName);
+
+    document.getElementById('btnConnect').style.display    = 'none';
+    document.getElementById('btnDisconnect').style.display = 'inline-flex';
+
+    document.getElementById('hrSrc').textContent  = '📶 ' + deviceName;
+    document.getElementById('hrSrc').className    = 'card-src src-bt';
+    document.getElementById('spo2Src').textContent = 'Simulated';
+    document.getElementById('tempSrc').textContent = 'Simulated';
+
+    document.getElementById('btInfoText').textContent =
+      `Connected to ${deviceName}. Heart rate is live from your watch!`;
+
+    const chip = document.getElementById('deviceChip');
+    chip.innerHTML = `<span class="device-chip">📶 ${deviceName}</span>`;
+    chip.style.display = 'block';
+
+    clearInterval(simInterval);
+    // SpO2 & Temp still simulated periodically
+    simInterval = setInterval(() => {
+      const hr = hrHistory.length ? hrHistory[hrHistory.length-1] : null;
+      if (!isConnected) return;
+      const d = simVitals(hr);
+      // only update spo2 and temp (hr comes from BLE)
+      const sp  = d.spo2, tmp = d.bodyTemp;
+      document.getElementById('spo2Val').textContent = sp.toFixed(0);
+      document.getElementById('tempVal').textContent = tmp.toFixed(1);
+      spo2History.push(sp); if(spo2History.length>30) spo2History.shift();
+      drawSparkline('spo2Chart', spo2History, '#4ecdc4');
+    }, 3000);
+
+  } catch (err) {
+    log(`Connection failed: ${err.message}`, 'err');
+    setPill('err', 'Connection Failed');
+    document.getElementById('btnConnect').disabled = false;
+    if (err.name !== 'NotFoundError') useSimulated();
+    else { setPill('idle','Not Connected'); }
   }
+}
 
-  /* ── Status helpers ── */
-  function statusClass(s) {
-    if (!s) return 's-normal';
-    const sl = s.toLowerCase();
-    if (sl.includes('critical') || sl.includes('high') || sl.includes('fever') || sl.includes('low (')) return 's-danger';
-    if (sl.includes('slightly') || sl.includes('low') || sl.includes('tachy') || sl.includes('brady')) return 's-warning';
-    return 's-normal';
+/* ════════════════════════════════════════════════
+   BLUETOOTH DISCONNECT
+════════════════════════════════════════════════ */
+function onDisconnected() {
+  log(`Device <b>${deviceName}</b> disconnected.`, 'warn');
+  isConnected = false;
+  setPill('idle', 'Disconnected');
+  document.getElementById('btnConnect').style.display    = 'inline-flex';
+  document.getElementById('btnDisconnect').style.display = 'none';
+  document.getElementById('btnConnect').disabled         = false;
+  document.getElementById('deviceChip').style.display    = 'none';
+  document.getElementById('btInfoText').textContent =
+    'Watch disconnected. Tap "Connect Watch" to reconnect.';
+  document.getElementById('deviceMini').textContent = 'None';
+  useSimulated();
+}
+
+async function disconnectBluetooth() {
+  if (hrCharac) {
+    try { await hrCharac.stopNotifications(); } catch(_) {}
+    hrCharac.removeEventListener('characteristicvaluechanged', onHRNotification);
   }
-
-  /* ── Render ── */
-  function render(d) {
-    const hr   = typeof d.heartRate === 'number' ? d.heartRate.toFixed(0) : '--';
-    const sp   = d.spo2 ?? '--';
-    const temp = typeof d.bodyTemp  === 'number' ? d.bodyTemp.toFixed(1)  : '--';
-
-    document.getElementById('hrVal').textContent   = hr;
-    document.getElementById('spo2Val').textContent  = sp;
-    document.getElementById('tempVal').textContent  = temp;
-
-    document.getElementById('hrMini').textContent   = hr + ' bpm';
-    document.getElementById('spo2Mini').textContent  = sp + '%';
-    document.getElementById('tempMini').textContent  = temp + '°C';
-    document.getElementById('srcMini').textContent   = d.source === 'simulated' ? '🎲 Demo' : '📡 ESP32';
-
-    const setBadge = (id, text) => {
-      const el = document.getElementById(id);
-      el.textContent  = text || '—';
-      el.className    = 'status-badge ' + statusClass(text);
-    };
-    setBadge('hrBadge',   d.hrStatus);
-    setBadge('spo2Badge', d.spo2Status);
-    setBadge('tempBadge', d.tempStatus);
-
-    const ov = document.getElementById('ovStatus');
-    ov.textContent = d.alertActive ? '⚠️ Alert — Check Patient' : '✅ All Vitals Normal';
-    ov.style.color = d.alertActive ? 'var(--red)' : 'var(--green)';
-
-    const banner = document.getElementById('alertBanner');
-    banner.style.display = d.alertActive ? 'block' : 'none';
-
-    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-
-    if (typeof d.heartRate === 'number') {
-      hrHistory.push(d.heartRate);
-      if (hrHistory.length > 25) hrHistory.shift();
-    }
-    if (typeof d.spo2 === 'number') {
-      spo2History.push(d.spo2);
-      if (spo2History.length > 25) spo2History.shift();
-    }
-    drawSparkline('hrChart',   hrHistory,   '#ff6b6b');
-    drawSparkline('spo2Chart', spo2History, '#4ecdc4');
+  if (btDevice && btDevice.gatt.connected) {
+    btDevice.gatt.disconnect();
   }
+  log('Manually disconnected.', 'warn');
+  onDisconnected();
+}
 
-  /* ── Fetch simulated data ── */
-  async function fetchSimulated() {
-    try {
-      const r = await fetch('/api/simulate');
-      const d = await r.json();
-      render(d);
-    } catch (e) {
-      // fallback: generate locally if API unavailable
-      const now = Date.now() / 3000;
-      render({
-        heartRate:  70 + Math.sin(now*.7)*8  + Math.random()*3,
-        spo2:       Math.round(97 + Math.sin(now*.3)*1.5 + Math.random()*.5),
-        bodyTemp:   36.6 + Math.sin(now*.2)*.4 + Math.random()*.1,
-        hrStatus:   'Normal', spo2Status: 'Normal', tempStatus: 'Normal',
-        status: 'Normal', alertActive: false, source: 'simulated'
-      });
-    }
-  }
-
-  /* ── Fetch from real ESP32 ── */
-  async function fetchESP32() {
-    try {
-      const r = await fetch(`http://${espBaseUrl}/data`, { signal: AbortSignal.timeout(3000) });
-      const d = await r.json();
-      d.source = 'esp32';
-      render(d);
-      setSrcStatus('live');
-    } catch (e) {
-      setSrcStatus('err');
-      fetchSimulated();
-    }
-  }
-
-  /* ── Source status ── */
-  function setSrcStatus(s) {
-    const el  = document.getElementById('sourceStatus');
-    const hdr = document.getElementById('headerStatus');
-    if (s === 'sim') {
-      el.className = 'status-badge sim-badge'; el.textContent = '🎲 Simulated Data';
-      hdr.textContent = 'Simulated';
-    } else if (s === 'live') {
-      el.className = 'status-badge live-src'; el.textContent = '📡 Live ESP32';
-      hdr.textContent = 'Live';
-    } else {
-      el.className = 'status-badge err-badge'; el.textContent = '⚠️ ESP32 Unreachable';
-      hdr.textContent = 'Error';
-    }
-  }
-
-  /* ── UI controls ── */
-  function connectESP32() {
-    const ip = document.getElementById('espIp').value.trim();
-    if (!ip) return;
-    espBaseUrl = ip;
-    mode = 'esp32';
-    document.getElementById('modeToggle').textContent = '🎲 Switch to Demo';
-    document.getElementById('modeToggle').classList.add('active');
-    setSrcStatus('live');
-  }
-
-  function useSimulated() {
-    mode = 'simulated';
-    document.getElementById('modeToggle').textContent = '🔄 Switch to ESP32';
-    document.getElementById('modeToggle').classList.remove('active');
-    setSrcStatus('sim');
-  }
-
-  function toggleMode() {
-    if (mode === 'simulated') {
-      const ip = document.getElementById('espIp').value.trim();
-      if (ip) { connectESP32(); } else {
-        document.getElementById('espIp').focus();
-        document.getElementById('espIp').style.borderColor = 'var(--red)';
-        setTimeout(() => document.getElementById('espIp').style.borderColor = '', 2000);
-      }
-    } else { useSimulated(); }
-  }
-
-  /* ── Poll loop ── */
-  function poll() {
-    if (mode === 'esp32') fetchESP32();
-    else                  fetchSimulated();
-  }
-
-  setSrcStatus('sim');
-  poll();
-  setInterval(poll, 2000);
+/* ════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════ */
+if (!navigator.bluetooth) {
+  document.getElementById('btWarning').style.display = 'block';
+  log('Web Bluetooth not supported — running in demo mode.', 'warn');
+}
+useSimulated();   // start with simulated data by default
 </script>
 </body>
 </html>
-
