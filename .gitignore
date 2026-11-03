@@ -1,0 +1,36 @@
+# Git ignore for HealthMonitor-IoT
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+env/
+
+# Arduino build artifacts
+*.elf
+*.bin
+*.hex
+*.map
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Secrets — NEVER commit these!
+secrets.h
+credentials.h
+config_private.h
