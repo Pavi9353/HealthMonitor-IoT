@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🩺 Wearable Health Monitor — IoT Dashboard</title>
+  <meta name="description" content="Real-time wearable health monitoring using ESP32, MAX30102, DS18B20. Heart Rate, SpO2, Temperature over Wi-Fi." />
+  <meta property="og:title" content="Wearable Health Monitor — IoT Dashboard" />
+  <meta property="og:description" content="Real-time health vitals dashboard powered by ESP32 & IoT sensors" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🩺</text></svg>" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:        #0f0c29;
+      --bg2:       #1a1740;
+      --card:      rgba(255,255,255,0.06);
+      --border:    rgba(255,255,255,0.10);
+      --green:     #00ff88;
+      --red:       #ff6b6b;
+      --teal:      #4ecdc4;
+      --orange:    #ffa500;
+      --purple:    #9988ff;
+      --yellow:    #ffcc00;
+      --white:     #ffffff;
+      --muted:     #aaaacc;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, var(--bg) 0%, #302b63 50%, #24243e 100%);
+      min-height: 100vh;
+      color: var(--white);
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { font-size: 1.8rem; }
+    .logo h1 { font-size: 1.15rem; font-weight: 700; }
+    .logo p  { font-size: 0.72rem; color: var(--muted); }
+    .live-badge {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(0,255,136,0.1);
+      border: 1px solid rgba(0,255,136,0.3);
+      border-radius: 20px; padding: 6px 14px;
+      font-size: 0.78rem; font-weight: 600; color: var(--green);
+    }
+    .pulse { width: 8px; height: 8px; border-radius: 50%;
+             background: var(--green); animation: pulse 1.4s infinite; }
+    @keyframes pulse {
+      0%,100% { transform:scale(1); opacity:1; }
+      50%      { transform:scale(1.6); opacity:.5; }
+    }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .mode-toggle {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 6px 14px;
+      color: var(--muted); font-size: 0.78rem; cursor: pointer;
+      transition: all .2s;
+    }
+    .mode-toggle:hover { border-color: var(--green); color: var(--green); }
+    .mode-toggle.active { background: rgba(0,255,136,.15);
+      border-color: var(--green); color: var(--green); }
+
+    /* ── HERO SECTION ── */
+    .hero {
+      text-align: center; padding: 48px 24px 24px;
+    }
+    .hero h2 { font-size: clamp(1.6rem, 4vw, 2.6rem); font-weight: 800;
+               line-height: 1.2; }
+    .hero h2 span { color: var(--green); }
+    .hero p { margin-top: 12px; color: var(--muted); font-size: 1rem; max-width: 560px; margin-inline: auto; }
+    .badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+    .badge {
+      padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+      background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
+    }
+
+    /* ── DATA SOURCE BAR ── */
+    .source-bar {
+      max-width: 900px; margin: 16px auto;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 20px;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .source-bar label { font-size: .82rem; color: var(--muted); white-space: nowrap; }
+    .source-bar input {
+      flex: 1; min-width: 200px; background: rgba(255,255,255,.06);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: white; padding: 6px 12px; font-size: .82rem; outline: none;
+    }
+    .source-bar input:focus { border-color: var(--green); }
+    .source-bar input::placeholder { color: var(--muted); }
+    .btn {
+      padding: 7px 18px; border-radius: 8px; font-size: .82rem;
+      font-weight: 600; cursor: pointer; border: none; transition: all .2s;
+    }
+    .btn-green  { background: var(--green); color: #0f0c29; }
+    .btn-green:hover  { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,255,136,.4); }
+    .btn-ghost  { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .btn-ghost:hover  { border-color: var(--green); color: var(--green); }
+    #sourceStatus { font-size: .78rem; padding: 4px 10px; border-radius: 8px; white-space: nowrap; }
+    .sim-badge  { background: rgba(255,204,0,.12); color: var(--yellow); border: 1px solid rgba(255,204,0,.3); }
+    .live-src   { background: rgba(0,255,136,.12); color: var(--green); border: 1px solid rgba(0,255,136,.3); }
+    .err-badge  { background: rgba(255,107,107,.12); color: var(--red); border: 1px solid rgba(255,107,107,.3); }
+
+    /* ── DASHBOARD GRID ── */
+    .dashboard {
+      max-width: 1100px; margin: 0 auto; padding: 0 20px 40px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    /* ── VITAL CARD ── */
+    .card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 20px; padding: 22px;
+      backdrop-filter: blur(8px);
+      transition: transform .3s, box-shadow .3s;
+      position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    }
+    .card-hr::before   { background: var(--red); }
+    .card-spo2::before { background: var(--teal); }
+    .card-temp::before { background: var(--orange); }
+    .card-ov::before   { background: var(--purple); }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,.3); }
+
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .card-icon   { font-size: 1.8rem; }
+    .card-label  { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+    .card-value {
+      font-size: 3.2rem; font-weight: 900; line-height: 1;
+      margin: 6px 0 2px; transition: color .4s;
+    }
+    .card-unit  { font-size: .85rem; color: var(--muted); margin-bottom: 10px; }
+
+    .status-badge {
+      display: inline-block; padding: 3px 12px; border-radius: 20px;
+      font-size: .75rem; font-weight: 600;
+    }
+    .s-normal  { background: rgba(0,255,136,.15);  color: var(--green); }
+    .s-warning { background: rgba(255,204,0,.15);  color: var(--yellow); }
+    .s-danger  { background: rgba(255,107,107,.15); color: var(--red); }
+
+    /* ── SPARKLINE CANVAS ── */
+    .chart-wrap { margin-top: 14px; border-radius: 8px;
+                  background: rgba(255,255,255,.03); padding: 8px; }
+    canvas { width: 100% !important; height: 56px !important; display: block; }
+
+    /* ── OVERALL CARD ── */
+    .card-ov { grid-column: 1 / -1; }
+    .ov-inner { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+    .ov-status { font-size: 1.8rem; font-weight: 800; }
+    .mini-stats { display: flex; gap: 14px; flex-wrap: wrap; }
+    .mini-stat  {
+      background: rgba(255,255,255,.07); border-radius: 12px; padding: 10px 18px;
+      min-width: 110px;
+    }
+    .mini-stat .ml { font-size: .72rem; color: var(--muted); }
+    .mini-stat .mv { font-size: 1.25rem; font-weight: 700; }
+
+    .refresh-info { margin-left: auto; text-align: right; }
+    .refresh-info .rl { font-size: .72rem; color: var(--muted); }
+    .refresh-info .rv { font-size: .85rem; color: var(--green); }
+
+    /* ── ALERT BANNER ── */
+    #alertBanner {
+      max-width: 1100px; margin: 0 auto 16px; padding: 0 20px;
+      display: none;
+    }
+    .alert-inner {
+      background: rgba(255,107,107,.12);
+      border: 1px solid rgba(255,107,107,.35);
+      border-radius: 12px; padding: 12px 20px;
+      display: flex; align-items: center; gap: 10px;
+      animation: alertPulse 1s infinite;
+    }
+    @keyframes alertPulse {
+      0%,100% { border-color: rgba(255,107,107,.35); }
+      50%      { border-color: rgba(255,107,107,.8); }
+    }
+    .alert-inner span { font-size: .9rem; font-weight: 600; color: var(--red); }
+
+    /* ── ABOUT SECTION ── */
+    .about {
+      max-width: 1100px; margin: 0 auto; padding: 0 20px 60px;
+    }
+    .about h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 14px; color: var(--green); }
+    .about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+    .about-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 18px;
+    }
+    .about-card .ai { font-size: 1.6rem; margin-bottom: 8px; }
+    .about-card .at { font-size: .9rem; font-weight: 700; margin-bottom: 4px; }
+    .about-card .ad { font-size: .78rem; color: var(--muted); }
+
+    .links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+    .link-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 18px; border-radius: 10px; font-size: .85rem; font-weight: 600;
+      text-decoration: none; transition: all .2s;
+    }
+    .link-btn.gh { background: rgba(255,255,255,.1); border: 1px solid var(--border); color: white; }
+    .link-btn.gh:hover { background: rgba(255,255,255,.18); }
+    .link-btn.demo { background: var(--green); color: #0f0c29; }
+    .link-btn.demo:hover { box-shadow: 0 4px 20px rgba(0,255,136,.4); transform:translateY(-1px); }
+
+    footer {
+      text-align: center; padding: 20px;
+      font-size: .78rem; color: #555577;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      header { padding: 0 14px; }
+      .hero { padding: 32px 14px 16px; }
+      .card-value { font-size: 2.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🩺</div>
+    <div>
+      <h1>Health Monitor</h1>
+      <p>IoT Wearable Dashboard</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-badge">
+      <div class="pulse"></div>
+      <span id="headerStatus">Simulated</span>
+    </div>
+    <button class="mode-toggle" id="modeToggle" onclick="toggleMode()">
+      🔄 Switch to ESP32
+    </button>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <h2>Wearable <span>Health Monitoring</span><br>IoT Dashboard</h2>
+  <p>Real-time heart rate, blood oxygen &amp; body temperature monitoring over Wi-Fi using ESP32 &amp; IoT sensors.</p>
+  <div class="badges">
+    <span class="badge">⚡ ESP32</span>
+    <span class="badge">❤️ MAX30102</span>
+    <span class="badge">🌡️ DS18B20</span>
+    <span class="badge">📡 Wi-Fi 802.11</span>
+    <span class="badge">☁️ ThingSpeak</span>
+    <span class="badge">🔔 Smart Alerts</span>
+  </div>
+</div>
+
+<!-- DATA SOURCE BAR -->
+<div style="max-width:900px;margin:0 auto;padding:0 20px 16px;">
+  <div class="source-bar" id="sourceBar">
+    <label>📡 ESP32 IP:</label>
+    <input type="text" id="espIp" placeholder="e.g. 192.168.1.100" />
+    <button class="btn btn-green" onclick="connectESP32()">Connect</button>
+    <button class="btn btn-ghost" onclick="useSimulated()">Use Demo Data</button>
+    <span class="status-badge sim-badge" id="sourceStatus">🎲 Simulated Data</span>
+  </div>
+</div>
+
+<!-- ALERT BANNER -->
+<div id="alertBanner">
+  <div class="alert-inner">
+    <span>⚠️</span>
+    <span id="alertMsg">Abnormal vitals detected! Check patient immediately.</span>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="dashboard">
+
+  <!-- Heart Rate -->
+  <div class="card card-hr">
+    <div class="card-header">
+      <div class="card-icon">❤️</div>
+      <div class="card-label">Heart Rate</div>
+    </div>
+    <div class="card-value" id="hrVal" style="color:var(--red)">--</div>
+    <div class="card-unit">beats per minute (BPM)</div>
+    <span class="status-badge s-normal" id="hrBadge">—</span>
+    <div class="chart-wrap">
+      <canvas id="hrChart"></canvas>
+    </div>
+  </div>
+
+  <!-- SpO2 -->
+  <div class="card card-spo2">
+    <div class="card-header">
+      <div class="card-icon">🩸</div>
+      <div class="card-label">Blood Oxygen (SpO₂)</div>
+    </div>
+    <div class="card-value" id="spo2Val" style="color:var(--teal)">--</div>
+    <div class="card-unit">percent (%)</div>
+    <span class="status-badge s-normal" id="spo2Badge">—</span>
+    <div class="chart-wrap">
+      <canvas id="spo2Chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Temperature -->
+  <div class="card card-temp">
+    <div class="card-header">
+      <div class="card-icon">🌡️</div>
+      <div class="card-label">Body Temperature</div>
+    </div>
+    <div class="card-value" id="tempVal" style="color:var(--orange)">--</div>
+    <div class="card-unit">degrees Celsius (°C)</div>
+    <span class="status-badge s-normal" id="tempBadge">—</span>
+  </div>
+
+  <!-- Overall -->
+  <div class="card card-ov">
+    <div class="card-label" style="margin-bottom:12px;">Overall Health Status</div>
+    <div class="ov-inner">
+      <div class="ov-status" id="ovStatus">Connecting…</div>
+      <div class="mini-stats">
+        <div class="mini-stat">
+          <div class="ml">❤️ Heart Rate</div>
+          <div class="mv" id="hrMini">--</div>
+        </div>
+        <div class="mini-stat">
+          <div class="ml">🩸 SpO₂</div>
+          <div class="mv" id="spo2Mini">--</div>
+        </div>
+        <div class="mini-stat">
+          <div class="ml">🌡️ Temperature</div>
+          <div class="mv" id="tempMini">--</div>
+        </div>
+        <div class="mini-stat">
+          <div class="ml">📡 Source</div>
+          <div class="mv" id="srcMini" style="font-size:.9rem;">--</div>
+        </div>
+      </div>
+      <div class="refresh-info">
+        <div class="rl">Last updated</div>
+        <div class="rv" id="lastUpdate">—</div>
+        <div class="rl" style="margin-top:4px;">Auto-refresh: 2s</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ABOUT -->
+<div class="about">
+  <h3>⚙️ About This Project</h3>
+  <div class="about-grid">
+    <div class="about-card">
+      <div class="ai">🔩</div>
+      <div class="at">Hardware</div>
+      <div class="ad">ESP32 + MAX30102 + DS18B20 + SSD1306 OLED + Buzzer + LED</div>
+    </div>
+    <div class="about-card">
+      <div class="ai">📡</div>
+      <div class="at">Wireless</div>
+      <div class="ad">IEEE 802.11 b/g/n Wi-Fi, HTTP REST API (JSON), ThingSpeak cloud</div>
+    </div>
+    <div class="about-card">
+      <div class="ai">💻</div>
+      <div class="at">Firmware</div>
+      <div class="ad">Arduino framework on ESP32. Self-hosted web server on port 80</div>
+    </div>
+    <div class="about-card">
+      <div class="ai">🔔</div>
+      <div class="at">Alerts</div>
+      <div class="ad">LED + buzzer trigger on abnormal HR, SpO₂ or temperature readings</div>
+    </div>
+    <div class="about-card">
+      <div class="ai">💰</div>
+      <div class="at">Cost</div>
+      <div class="ad">₹600 – ₹900 total (~$8–$12 USD). Beginner friendly build.</div>
+    </div>
+    <div class="about-card">
+      <div class="ai">👨‍💻</div>
+      <div class="at">Author</div>
+      <div class="ad">Praveen Kumar | Wireless Communication & IoT | 2026</div>
+    </div>
+  </div>
+
+  <div class="links" style="margin-top:24px;">
+    <a href="https://github.com/Pavi9353/HealthMonitor-IoT" target="_blank" class="link-btn gh">
+      ⭐ GitHub Repository
+    </a>
+    <a href="https://github.com/Pavi9353/HealthMonitor-IoT/blob/main/firmware/main/main.ino" target="_blank" class="link-btn gh">
+      📄 View Firmware Code
+    </a>
+    <a href="https://github.com/Pavi9353/HealthMonitor-IoT/blob/main/docs/circuit_diagram.png" target="_blank" class="link-btn gh">
+      🔌 Circuit Diagram
+    </a>
+    <a href="/api/simulate" target="_blank" class="link-btn demo">
+      📊 JSON Data API
+    </a>
+  </div>
+</div>
+
+<footer>
+  🩺 Wearable Health Monitoring System &nbsp;|&nbsp; Built by Praveen Kumar &nbsp;|&nbsp; Deployed on Vercel &nbsp;|&nbsp; 2026
+</footer>
+
+<script>
+  /* ── State ── */
+  let mode       = 'simulated';   // 'simulated' | 'esp32'
+  let espBaseUrl = '';
+  const hrHistory   = [];
+  const spo2History = [];
+
+  /* ── Sparkline ── */
+  function drawSparkline(id, data, color) {
+    const c = document.getElementById(id);
+    if (!c || data.length < 2) return;
+    c.width  = c.offsetWidth;
+    c.height = 56;
+    const ctx = c.getContext('2d');
+    const w = c.width, h = c.height;
+    const min = Math.min(...data) * 0.97;
+    const max = Math.max(...data) * 1.03 || 1;
+    ctx.clearRect(0, 0, w, h);
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = 2;
+    ctx.shadowBlur  = 10;
+    ctx.shadowColor = color;
+    data.forEach((v, i) => {
+      const x = (i / (data.length - 1)) * w;
+      const y = h - ((v - min) / (max - min)) * h;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, color + '44');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad; ctx.fill();
+  }
+
+  /* ── Status helpers ── */
+  function statusClass(s) {
+    if (!s) return 's-normal';
+    const sl = s.toLowerCase();
+    if (sl.includes('critical') || sl.includes('high') || sl.includes('fever') || sl.includes('low (')) return 's-danger';
+    if (sl.includes('slightly') || sl.includes('low') || sl.includes('tachy') || sl.includes('brady')) return 's-warning';
+    return 's-normal';
+  }
+
+  /* ── Render ── */
+  function render(d) {
+    const hr   = typeof d.heartRate === 'number' ? d.heartRate.toFixed(0) : '--';
+    const sp   = d.spo2 ?? '--';
+    const temp = typeof d.bodyTemp  === 'number' ? d.bodyTemp.toFixed(1)  : '--';
+
+    document.getElementById('hrVal').textContent   = hr;
+    document.getElementById('spo2Val').textContent  = sp;
+    document.getElementById('tempVal').textContent  = temp;
+
+    document.getElementById('hrMini').textContent   = hr + ' bpm';
+    document.getElementById('spo2Mini').textContent  = sp + '%';
+    document.getElementById('tempMini').textContent  = temp + '°C';
+    document.getElementById('srcMini').textContent   = d.source === 'simulated' ? '🎲 Demo' : '📡 ESP32';
+
+    const setBadge = (id, text) => {
+      const el = document.getElementById(id);
+      el.textContent  = text || '—';
+      el.className    = 'status-badge ' + statusClass(text);
+    };
+    setBadge('hrBadge',   d.hrStatus);
+    setBadge('spo2Badge', d.spo2Status);
+    setBadge('tempBadge', d.tempStatus);
+
+    const ov = document.getElementById('ovStatus');
+    ov.textContent = d.alertActive ? '⚠️ Alert — Check Patient' : '✅ All Vitals Normal';
+    ov.style.color = d.alertActive ? 'var(--red)' : 'var(--green)';
+
+    const banner = document.getElementById('alertBanner');
+    banner.style.display = d.alertActive ? 'block' : 'none';
+
+    document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+
+    if (typeof d.heartRate === 'number') {
+      hrHistory.push(d.heartRate);
+      if (hrHistory.length > 25) hrHistory.shift();
+    }
+    if (typeof d.spo2 === 'number') {
+      spo2History.push(d.spo2);
+      if (spo2History.length > 25) spo2History.shift();
+    }
+    drawSparkline('hrChart',   hrHistory,   '#ff6b6b');
+    drawSparkline('spo2Chart', spo2History, '#4ecdc4');
+  }
+
+  /* ── Fetch simulated data ── */
+  async function fetchSimulated() {
+    try {
+      const r = await fetch('/api/simulate');
+      const d = await r.json();
+      render(d);
+    } catch (e) {
+      // fallback: generate locally if API unavailable
+      const now = Date.now() / 3000;
+      render({
+        heartRate:  70 + Math.sin(now*.7)*8  + Math.random()*3,
+        spo2:       Math.round(97 + Math.sin(now*.3)*1.5 + Math.random()*.5),
+        bodyTemp:   36.6 + Math.sin(now*.2)*.4 + Math.random()*.1,
+        hrStatus:   'Normal', spo2Status: 'Normal', tempStatus: 'Normal',
+        status: 'Normal', alertActive: false, source: 'simulated'
+      });
+    }
+  }
+
+  /* ── Fetch from real ESP32 ── */
+  async function fetchESP32() {
+    try {
+      const r = await fetch(`http://${espBaseUrl}/data`, { signal: AbortSignal.timeout(3000) });
+      const d = await r.json();
+      d.source = 'esp32';
+      render(d);
+      setSrcStatus('live');
+    } catch (e) {
+      setSrcStatus('err');
+      fetchSimulated();
+    }
+  }
+
+  /* ── Source status ── */
+  function setSrcStatus(s) {
+    const el  = document.getElementById('sourceStatus');
+    const hdr = document.getElementById('headerStatus');
+    if (s === 'sim') {
+      el.className = 'status-badge sim-badge'; el.textContent = '🎲 Simulated Data';
+      hdr.textContent = 'Simulated';
+    } else if (s === 'live') {
+      el.className = 'status-badge live-src'; el.textContent = '📡 Live ESP32';
+      hdr.textContent = 'Live';
+    } else {
+      el.className = 'status-badge err-badge'; el.textContent = '⚠️ ESP32 Unreachable';
+      hdr.textContent = 'Error';
+    }
+  }
+
+  /* ── UI controls ── */
+  function connectESP32() {
+    const ip = document.getElementById('espIp').value.trim();
+    if (!ip) return;
+    espBaseUrl = ip;
+    mode = 'esp32';
+    document.getElementById('modeToggle').textContent = '🎲 Switch to Demo';
+    document.getElementById('modeToggle').classList.add('active');
+    setSrcStatus('live');
+  }
+
+  function useSimulated() {
+    mode = 'simulated';
+    document.getElementById('modeToggle').textContent = '🔄 Switch to ESP32';
+    document.getElementById('modeToggle').classList.remove('active');
+    setSrcStatus('sim');
+  }
+
+  function toggleMode() {
+    if (mode === 'simulated') {
+      const ip = document.getElementById('espIp').value.trim();
+      if (ip) { connectESP32(); } else {
+        document.getElementById('espIp').focus();
+        document.getElementById('espIp').style.borderColor = 'var(--red)';
+        setTimeout(() => document.getElementById('espIp').style.borderColor = '', 2000);
+      }
+    } else { useSimulated(); }
+  }
+
+  /* ── Poll loop ── */
+  function poll() {
+    if (mode === 'esp32') fetchESP32();
+    else                  fetchSimulated();
+  }
+
+  setSrcStatus('sim');
+  poll();
+  setInterval(poll, 2000);
+</script>
+</body>
+</html>
